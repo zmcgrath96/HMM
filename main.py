@@ -13,6 +13,8 @@ def main(args):
 
     for line in file:
         words = line.translate(table).replace("\n", "").lower().split(" ")
+        # lines less than 2 cause errors.
+        # lines > 50 typically converge to 0 probablity
         if len(words) <= 2 or len(words) > 50:
             continue
         textCorpus.append(words)
@@ -24,7 +26,7 @@ def main(args):
     file.close()
 
     shakeHMM = hmm.HMM(5, uniqueWords)
-    a, b, pi = shakeHMM.trainHMM(textCorpus, maxIter=1, threshold=0.01)
+    a, b, pi = shakeHMM.trainHMM(textCorpus, maxIter=50, threshold=0.01)
     if a is not None and b is not None and pi is not None:
         np.savetxt("output/a.out", a)
         np.savetxt("output/b.out", b)

@@ -47,7 +47,7 @@ class HMM:
 
             # put all lines in queue
             for seq, n in zip(text_by_index, range(len(text_by_index))):
-                if n % 10000 == 0:
+                if n % 50000 == 0:
                     print("Line {}".format(n))
                 alpha = self.forwardBaumWelch(seq)
                 beta = self.backwardBaumWelch(seq)
@@ -102,9 +102,10 @@ class HMM:
             if total_diff <= threshold:
                 break
 
-        if self.sanityCheck():
-            return self.a, self.b, self.pi
-        return None, None, None
+            if not self.sanityCheck():
+                print("Error training hmm")
+                sys.exit(1)
+        return self.a, self.b, self.pi
 
 
     def sanityCheck(self):

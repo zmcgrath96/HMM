@@ -25,14 +25,11 @@ def main(args):
 
     file.close()
 
-    shakeHMM = hmm.HMM(5, uniqueWords)
-    a, b, pi = shakeHMM.trainHMM(textCorpus, maxIter=50, threshold=0.01)
-    if a is not None and b is not None and pi is not None:
-        np.savetxt("output/a.out", a)
-        np.savetxt("output/b.out", b)
-        np.savetxt("output/pi.out", pi)
-    else:
-        print("Error running hmm")
+    shakeHMM = hmm.HMM(3, uniqueWords)
+    a, b, pi = shakeHMM.trainHMM(textCorpus, maxIter=1000, threshold=0.0001)
+    np.savetxt("output/a.out", a)
+    np.savetxt("output/b.out", b)
+    np.savetxt("output/pi.out", pi)
 
 
 if __name__ == '__main__':

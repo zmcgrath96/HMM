@@ -71,26 +71,24 @@ class HMM:
 
             # pi
             print("maxing pi")
-            self.pi = np.zeros((self.numStates,))
             for i in range(self.numStates):
+                temp_pi = 0
                 for T in range(len(textCorpus)):
-                    self.pi[i] += gammas[T][i,0]
-            sum = np.sum(self.pi)
-            self.pi = self.pi / sum
+                    temp_pi += gammas[T][i,0]
+                self.pi[i] = temp_pi
+            self.pi = self.pi / np.sum(self.pi)
 
             # a
             print("maxing a")
             for i in range(self.numStates):
                 denom = 0
-                for T, seq in zip(range(len(text_by_index)), text_by_index):
-                    for t in range(len(seq) - 1):
-                        denom += gammas[T][i,t]
+                for T in range(len(text_by_index)):
+                    denom += np.sum(gammas[T][i,0:-2])
 
                 for j in range(self.numStates):
                     numer = 0
-                    for T, seq in zip(range(len(text_by_index)), text_by_index):
-                        for t in range(len(seq)):
-                            numer += xis[T][i,j,t]
+                    for T in range(len(text_by_index)):
+                        numer += np.sum(xis[T][i,j,0:-2])
                     self.a[i,j] = numer / denom
 
             # b
@@ -104,6 +102,9 @@ class HMM:
                         self.b[i, word] += gammas[T][i,t]
 
                 self.b[i,:] = self.b[i,:] / denom
+            print(self.a)
+            print(self.b)
+            print(self.pi)
 
             print("done maxing")
             diffA = np.absolute(np.linalg.norm(self.a) - np.linalg.norm(old_a))
@@ -151,12 +152,12 @@ class HMM:
         alpha = np.zeros((self.numStates, len(seq)))
         alpha[:,0] = self.pi[:] * self.b[:,seq[0]]
 
-        for t in range(1, len(seq)):
+        for t in range(len(seq) - 1):
             for i in range(self.numStates):
                 sum = 0
                 for j in range(self.numStates):
-                    sum += alpha[j,t-1] * self.a[j,i]
-                alpha[i,t] = self.b[i,seq[t-1]] * sum
+                    sum += alpha[j,t] * self.a[j,i]
+                alpha[i,t+1] = self.b[i,seq[t+1]] * sum
         return alpha
 
 

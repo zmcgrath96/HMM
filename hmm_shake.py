@@ -36,8 +36,8 @@ def train():
     for line in file:
         words = line.translate(table).replace("\n", "").lower().split(" ")
         # lines less than 2 cause errors.
-        # lines > 50 typically converge to 0 probablity
-        if len(words) <= 2 or len(words) > 50:
+        # lines > 60 typically converge to 0 probablity
+        if len(words) <= 2 or len(words) > 60:
             continue
         textCorpus.append(words)
         for word in words:
@@ -46,7 +46,7 @@ def train():
             uniqueWords[word] += 1
     file.close()
 
-    shakeHMM = hmm.HMM(use="t", states=5, obs=uniqueWords)
+    shakeHMM = hmm.HMM(use="t", states=3, obs=uniqueWords)
     word, index = shakeHMM.getWordMaps()
     saveDict(word, "output/word_map.out")
     saveDict(index, "output/index_map.out")

@@ -8,30 +8,35 @@ import threading
 import time
 
 class HMM:
-    def __init__(self, states, uniqueWords):
-        self.numStates = states
-        self.numObvs = len(uniqueWords)
-        self.a = np.random.rand(self.numStates, self.numStates)
-        self.b = np.zeros((self.numStates, self.numObvs))
-        self.pi = np.random.rand(self.numStates, 1)
-        self.word_map = self.make_word_map(uniqueWords)
-        self.index_map = self.make_index_map()
-        # fix a
-        for i in range(self.numStates):
-            sum = np.sum(self.a[i,:])
-            for j in range(self.numStates):
-                self.a[i,j] = self.a[i,j] / sum
+    def __init__(self, use, states=None, obs=None, a=None, b=None, pi=None, index=None, word=None):
+        # training constructor
+        if use == "t":
+            self.numStates = states
+            self.numObvs = len(obs)
+            self.a = np.full((self.numStates, self.numStates), 1 / self.numStates)
+            self.b = np.zeros((self.numStates, self.numObvs))
+            self.pi = np.full((self.numStates,), 1 / self.numStates)
+            self.word_map = self.make_word_map(obs)
+            self.index_map = self.make_index_map()
 
-        # fix pi
-        self.pi = self.pi / np.sum(self.pi)
+            #fill b
+            sum = 0
+            for i in range(self.numStates):
+                for word in obs:
+                    self.b[i, self.word_index(word)] = obs[word]
+                    sum += obs[word]
+            self.b = self.b / sum
 
-        #fill b
-        sum = 0
-        for i in range(self.numStates):
-            for word in uniqueWords:
-                self.b[i, self.word_index(word)] = uniqueWords[word]
-                sum += uniqueWords[word]
-        self.b = self.b / sum
+        else:
+            self.numStates = states
+            self.a = a
+            self.b = b
+            self.pi = pi
+            self.word_map = word
+            self.index_map = index
+            self.numObvs = len(self.word_map)
+
+
 
     def trainHMM(self, textCorpus, maxIter=1000, threshold=0.00001):
         text_by_index = self.text_to_index(textCorpus)
@@ -60,24 +65,26 @@ class HMM:
 
             # pi
             print("maxing pi")
-            self.pi = np.zeros((self.numStates, 1))
+            self.pi = np.zeros((self.numStates,))
             for i in range(self.numStates):
                 for T in range(len(textCorpus)):
-                    self.pi[i,0] += gammas[T][i,0]
+                    self.pi[i] += gammas[T][i,0]
             sum = np.sum(self.pi)
-            self.pi[:,0] = self.pi[:,0] / sum
+            self.pi = self.pi / sum
 
             # a
             print("maxing a")
             for i in range(self.numStates):
                 denom = 0
-                for seq, T in zip(text_by_index, range(len(text_by_index))):
-                    denom += np.sum(gammas[T][i,0:-2])
+                for T, seq in zip(range(len(text_by_index)), text_by_index):
+                    for t in range(len(seq) - 1):
+                        denom += gammas[T][i,t]
 
                 for j in range(self.numStates):
                     numer = 0
-                    for seq, T in zip(text_by_index, range(len(text_by_index))):
-                        numer += np.sum(xis[T][i,j,0:-2])
+                    for T, seq in zip(range(len(text_by_index)), text_by_index):
+                        for t in range(len(seq)):
+                            numer += xis[T][i,j,t]
                     self.a[i,j] = numer / denom
 
             # b
@@ -104,7 +111,7 @@ class HMM:
 
             if not self.sanityCheck():
                 print("Error training hmm")
-                sys.exit(1)
+                return None, None, None
         return self.a, self.b, self.pi
 
 
@@ -127,7 +134,7 @@ class HMM:
 
         sumPi = 0.0
         for i in range(self.numStates):
-            sumPi += self.pi[i,0]
+            sumPi += self.pi[i]
         if (int(round(sumPi)) != 1):
             print("Pi: sumPi: {}".format(sumPi))
             return False
@@ -136,7 +143,7 @@ class HMM:
 
     def forwardBaumWelch(self, seq):
         alpha = np.zeros((self.numStates, len(seq)))
-        alpha[:,0] = self.pi[:,0] * self.b[:,seq[0]]
+        alpha[:,0] = self.pi[:] * self.b[:,seq[0]]
 
         for t in range(1, len(seq)):
             for i in range(self.numStates):
@@ -159,23 +166,24 @@ class HMM:
 
     def getGamma(self, alpha, beta, seq):
         gamma = np.zeros((self.numStates, len(seq)))
-        denom = 0
-        for i in range(self.numStates):
-            for t in range(len(seq)):
+
+        for t in range(len(seq)):
+            denom = 0
+            for i in range(self.numStates):
                 gamma[i,t] = alpha[i,t] * beta[i,t]
                 denom += gamma[i,t]
-        gamma = gamma / denom
+            gamma[:,t] = gamma[:,t] / denom
         return gamma
 
     def getXi(self, alpha, beta, seq):
         xi = np.zeros((self.numStates, self.numStates, len(seq)))
-        denom = 0
-        for i in range(self.numStates):
-            for j in range(self.numStates):
-                for t in range(len(seq)-1):
+        for t in range(len(seq)-1):
+            denom = 0
+            for i in range(self.numStates):
+                for j in range(self.numStates):
                     xi[i,j,t] = alpha[i,t] * self.a[i,j] * beta[j,t+1] * self.b[j,seq[t+1]]
                     denom += xi[i,j,t]
-        xi = xi / denom
+            xi[:,:,t] = xi[:,:,t] / denom
         return xi
 
     # keep track of word integer relationship for numpy arrays
@@ -198,7 +206,9 @@ class HMM:
     def make_index_map(self):
         map = {}
         for word in self.word_map:
-            map[self.word_map[word]] = word
+            index = self.word_map[word]
+            map[index] = word
+        return map
 
     def text_to_index(self, text):
         text_by_index = []
@@ -208,3 +218,15 @@ class HMM:
                 seq_by_index.append(self.word_index(word))
             text_by_index.append(seq_by_index)
         return text_by_index
+
+    def getWordMaps(self):
+        return self.word_map, self.index_map
+
+    def genText(self, length):
+        state = np.random.choice(self.numStates, p=self.pi[:])
+        seq = ""
+        for i in range(length):
+            index = np.random.choice(self.numObvs, p=self.b[state,:])
+            seq += self.index_word(index) + " "
+            state = np.random.choice(self.numStates, p=self.a[state,:])
+        return seq

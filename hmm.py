@@ -12,11 +12,18 @@ class HMM:
         if use == "t":
             self.numStates = states
             self.numObvs = len(obs)
-            self.a = np.full((self.numStates, self.numStates), 1 / self.numStates)
+            self.a = np.random.rand(self.numStates, self.numStates)
             self.b = np.zeros((self.numStates, self.numObvs))
-            self.pi = np.full((self.numStates,), 1 / self.numStates)
+            self.pi = np.random.rand(self.numStates,)
             self.word_map = self.make_word_map(obs)
             self.index_map = self.make_index_map()
+
+            # fix a
+            for i in range(self.numStates):
+                self.a[i,:] = self.a[i,:] / np.sum(self.a[i,:])
+
+            # fix pi
+            self.pi = self.pi / np.sum(self.pi)
 
             #fill b
             sum = 0

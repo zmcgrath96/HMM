@@ -16,7 +16,7 @@ def main(args):
         if len(args) != 3:
             printUsage()
         shakeHMM = load_trained_hmm()
-        shakeHMM.genText(int(args[2]))
+        print(shakeHMM.genText(int(args[2])))
 
 
 def printUsage():
@@ -92,11 +92,12 @@ def load_trained_hmm():
     word = {}
     fileW = open("output/word_map.out")
     for line in fileW:
-        line_slpit = line.split(" ")
-        if len(line_slpit) != 2:
+        line = line.replace("\n", "")
+        line_split = line.split(" ")
+        if len(line_split) != 2:
             print("Error processing word_map.out: line was not a key value pair")
             sys.exit(1)
-        word[line_slpit[0]] = int(line_slpit[1])
+        word[line_split[0]] = int(line_split[1])
     fileW.close()
     if len(word) != numObvs:
         print("Error: word_map and b matrix do not have the same number of observations")
@@ -105,11 +106,12 @@ def load_trained_hmm():
     index = {}
     fileI = open("output/index_map.out")
     for line in fileI:
-        line_slpit = line.split(" ")
-        if len(line_slpit) != 2:
+        line = line.replace("\n", "")
+        line_split = line.split(" ")
+        if len(line_split) != 2:
             print("Error processing index_map.out: line was not a key value pair")
             sys.exit(1)
-        index[int(line_slpit[0])] = line_slpit[1]
+        index[int(line_split[0])] = line_split[1]
     fileI.close()
     if len(index) != numObvs:
         print("Error: index_map and b matrix do not have the same number of observations")

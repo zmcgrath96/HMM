@@ -102,9 +102,6 @@ class HMM:
                         self.b[i, word] += gammas[T][i,t]
 
                 self.b[i,:] = self.b[i,:] / denom
-            print(self.a)
-            print(self.b)
-            print(self.pi)
 
             print("done maxing")
             diffA = np.absolute(np.linalg.norm(self.a) - np.linalg.norm(old_a))

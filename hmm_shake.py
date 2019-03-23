@@ -46,7 +46,7 @@ def train():
             uniqueWords[word] += 1
     file.close()
 
-    shakeHMM = hmm.HMM(use="t", states=7, obs=uniqueWords)
+    shakeHMM = hmm.HMM(use="t", states=10, obs=uniqueWords)
     word, index = shakeHMM.getWordMaps()
     a, b, pi = shakeHMM.trainHMM(textCorpus, maxIter=1000, threshold=0.0001)
     if a is not None:

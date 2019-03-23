@@ -46,7 +46,7 @@ def train():
             uniqueWords[word] += 1
     file.close()
 
-    shakeHMM = hmm.HMM(use="t", states=3, obs=uniqueWords)
+    shakeHMM = hmm.HMM(use="t", states=7, obs=uniqueWords)
     word, index = shakeHMM.getWordMaps()
     saveDict(word, "output/word_map.out")
     saveDict(index, "output/index_map.out")

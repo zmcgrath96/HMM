@@ -202,9 +202,15 @@ class HMM:
 
     # return the integer associated with the word
     def word_index(self, word):
+        if word not in self.word_map:
+            #for unknown words
+            return 0
         return self.word_map[word]
 
     def index_word(self, index):
+        if index not in self.index_map:
+            # for unknown words
+            return self.index_map[0]
         return self.index_map[index]
 
     def make_index_map(self):
@@ -234,3 +240,29 @@ class HMM:
             seq += self.index_word(index) + " "
             state = np.random.choice(self.numStates, p=self.a[state,:])
         return seq
+
+    # viterbi algorithm for completion
+    def predictText(self, num, text):
+        predicted_text = copy.copy(text)
+        T1 = np.zeros((self.numStates, len(text)))
+        T2 = np.zeros((self.numStates, len(text)))
+        T1[:,0] = self.pi[:] * self.b[:,self.word_index(text[0])]
+        for word, t in zip(text[1:], range(1,len(text))):
+            for i in range(self.numStates):
+                arr = T1[:,t-1] * self.a[:,i] *self.b[i, self.word_index(word)]
+                T1[i,t] = np.amax(arr)
+                T2[i,t] = np.argmax(arr)
+
+        lastState = np.argmax(T1[:,-1])
+        X = np.zeros((len(text)))
+        X[-1] = np.argmax(T1[:,-1])
+        for  i in range(len(text)-1, 0, -1):
+            prev = int(X[i])
+            X[i-1] = T2[prev,i]
+        # predict next word
+        for i in range(num):
+            nextState = np.argmax(self.a[lastState,:])
+            nextWord = np.argmax(self.b[nextState,:])
+            predicted_text.append(self.index_word(nextWord))
+            lastState = nextState
+        return predicted_text

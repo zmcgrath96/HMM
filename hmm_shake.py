@@ -17,6 +17,21 @@ def main(args):
             printUsage()
         shakeHMM = load_trained_hmm()
         print(shakeHMM.genText(int(args[2])))
+    elif args[1] == "-p":
+        if len(args) < 4:
+            printUsage()
+        shakeHMM = load_trained_hmm()
+        num = int(args[2])
+        text = []
+        for i in range(3, len(args)):
+            text.append(args[i])
+        predicted_text = shakeHMM.predictText(num, text)
+        output = ""
+        for word in predicted_text:
+            output += word + " "
+        print(output)
+    else:
+        printUsage()
 
 
 def printUsage():
@@ -117,6 +132,7 @@ def load_trained_hmm():
         print("Error: index_map and b matrix do not have the same number of observations")
         sys.exit(1)
     return hmm.HMM(use="g", states=numStates, a=a, b=b, pi=pi, index=index, word=word)
+
 
 if __name__ == '__main__':
     main(sys.argv)

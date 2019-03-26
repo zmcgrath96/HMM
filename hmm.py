@@ -234,33 +234,38 @@ class HMM:
 
     def genText(self, length):
         state = np.random.choice(self.numStates, p=self.pi[:])
-        seq = ""
-        for i in range(length):
+        seq = []
+        for _ in range(length):
             index = np.random.choice(self.numObvs, p=self.b[state,:])
-            seq += self.index_word(index) + " "
-            state = np.random.choice(self.numStates, p=self.a[state,:])
-        return seq
+            seq.append(self.index_word(index))
+            state = int(self.viterbi(seq)[-1])
+        return ' '.join(seq)
 
-    # viterbi algorithm for completion
-    def predictText(self, num, text):
-        predicted_text = copy.copy(text)
-        T1 = np.zeros((self.numStates, len(text)))
-        T2 = np.zeros((self.numStates, len(text)))
-        T1[:,0] = self.pi[:] * self.b[:,self.word_index(text[0])]
-        for word, t in zip(text[1:], range(1,len(text))):
+    def viterbi(self, seq):
+        T1 = np.zeros((self.numStates, len(seq)))
+        T2 = np.zeros((self.numStates, len(seq)))
+        T1[:,0] = self.pi[:] * self.b[:,self.word_index(seq[0])]
+        for word, t in zip(seq[1:], range(1,len(seq))):
             for i in range(self.numStates):
                 arr = T1[:,t-1] * self.a[:,i] *self.b[i, self.word_index(word)]
                 T1[i,t] = np.amax(arr)
                 T2[i,t] = np.argmax(arr)
 
-        lastState = np.argmax(T1[:,-1])
-        X = np.zeros((len(text)))
+        X = np.zeros((len(seq)))
         X[-1] = np.argmax(T1[:,-1])
-        for  i in range(len(text)-1, 0, -1):
+        for  i in range(len(seq)-1, 0, -1):
             prev = int(X[i])
             X[i-1] = T2[prev,i]
+
+        return X
+
+    # viterbi algorithm for completion
+    def predictText(self, num, text):
         # predict next word
-        for i in range(num):
+        predicted_text = copy.copy(text)
+        for _ in range(num):
+            X = self.viterbi(predicted_text)
+            lastState = int(X[-1])
             nextState = np.argmax(self.a[lastState,:])
             nextWord = np.argmax(self.b[nextState,:])
             predicted_text.append(self.index_word(nextWord))
